@@ -24,7 +24,7 @@
             </VideoClicks>
             <MediaFiles>
              <MediaFile delivery="progressive" type="video/x-flv" bitrate="500" width="400" height="300" scalable="true" maintainAspectRatio="true">
-        http://demo.examplemedia.com/video/acudeo/Carrot_400x300_500kb.flv
+        https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4
           </MediaFile>
          </MediaFiles>
           </Linear>
