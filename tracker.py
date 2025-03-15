@@ -23,15 +23,15 @@ def log_view(video_url, client_ip, user_agent):
         writer = csv.writer(file)
         writer.writerow([datetime.now(), video_url, client_ip, user_agent])
 
-# Track route
+# Track route with redirect feature
 @app.route('/track', methods=['GET'])
 def track():
     video_url = request.args.get('video_url')
-    redirect_url = request.args.get('redirect')  # Capture redirect URL
-
+    redirect_url = request.args.get('redirect')
+    
     if not video_url or not redirect_url:
         return "❌ Missing 'video_url' or 'redirect' parameter", 400
-
+    
     client_ip = request.remote_addr
     user_agent = request.headers.get('User-Agent')
 
@@ -41,7 +41,7 @@ def track():
     # Log for Render console visibility
     print(f"✅ View logged: {video_url} | IP: {client_ip} | User Agent: {user_agent}")
 
-    # Redirect the user back to the video link
+    # Redirect to the original video URL
     return redirect(redirect_url, code=302)
 
 # Route to download sorted logs or full log file
@@ -59,7 +59,7 @@ def download_logs():
 
             # Add total views at the top
             total_views = view_count['View Count'].sum()
-            view_count.loc[-1] = ["TOTAL VIEWS", total_views]  # Add total at the top
+            view_count.loc[-1] = ["TOTAL VIEWS", total_views]
             view_count.index = view_count.index + 1
             view_count.sort_index(inplace=True)
 
