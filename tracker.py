@@ -56,6 +56,12 @@ def download_logs():
             view_count = df['Video URL'].value_counts().reset_index()
             view_count.columns = ['Video URL', 'View Count']
 
+            # Add total views at the top
+            total_views = view_count['View Count'].sum()
+            view_count.loc[-1] = ["TOTAL VIEWS", total_views]  # Add total at the top
+            view_count.index = view_count.index + 1
+            view_count.sort_index(inplace=True)
+
             # Save sorted data
             view_count.to_csv(SORTED_LOG_FILE, index=False, encoding='utf-8-sig')
             return send_file(SORTED_LOG_FILE, as_attachment=True)
