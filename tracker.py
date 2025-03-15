@@ -1,11 +1,21 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify, send_file
 import csv
+import pandas as pd
 from datetime import datetime
 
 app = Flask(__name__)
 
-# Log file path
+# Log file paths
 LOG_FILE = "view_logs.csv"
+SORTED_LOG_FILE = "sorted_view_logs.csv"
+
+# Initialize CSV file with headers if not present
+try:
+    with open(LOG_FILE, 'x', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        writer.writerow(["Timestamp", "Video URL", "Client IP", "User Agent"])
+except FileExistsError:
+    pass  # File already exists
 
 # Function to log viewer details
 def log_view(video_url, client_ip, user_agent):
@@ -13,18 +23,50 @@ def log_view(video_url, client_ip, user_agent):
         writer = csv.writer(file)
         writer.writerow([datetime.now(), video_url, client_ip, user_agent])
 
+# Track route
 @app.route('/track', methods=['GET'])
 def track():
     video_url = request.args.get('video_url')
+    if not video_url:
+        return "❌ Missing 'video_url' parameter", 400
+    
     client_ip = request.remote_addr
     user_agent = request.headers.get('User-Agent')
 
-    # Log the viewer data
+    # Log the data
     log_view(video_url, client_ip, user_agent)
 
-    # Return a transparent pixel (for pixel tracking)
+    # Log for Render console visibility
+    print(f"✅ View logged: {video_url} | IP: {client_ip} | User Agent: {user_agent}")
+
+    # Transparent Pixel Response for tracking
     pixel = b'\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x80\xff\x00\xc0\xc0\xc0\x00\x00\x00!\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02L\x01\x00;'
     return pixel, 200, {'Content-Type': 'image/gif'}
 
+# Route to download sorted logs or full log file
+@app.route('/logs', methods=['GET'])
+def download_logs():
+    log_type = request.args.get('type', 'full')  # Options: 'full' or 'sorted'
+
+    try:
+        df = pd.read_csv(LOG_FILE)
+
+        if log_type == 'sorted':
+            # Count views per video link
+            view_count = df['Video URL'].value_counts().reset_index()
+            view_count.columns = ['Video URL', 'View Count']
+
+            # Save sorted data
+            view_count.to_csv(SORTED_LOG_FILE, index=False, encoding='utf-8-sig')
+            return send_file(SORTED_LOG_FILE, as_attachment=True)
+        else:
+            # Download full log file
+            return send_file(LOG_FILE, as_attachment=True)
+
+    except Exception as e:
+        return f"❌ Error processing log file: {str(e)}"
+
+# Run the app
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000)
+    from waitress import serve
+    serve(app, host='0.0.0.0', port=5000)
