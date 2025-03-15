@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, redirect
 import csv
 import pandas as pd
 from datetime import datetime
@@ -27,9 +27,11 @@ def log_view(video_url, client_ip, user_agent):
 @app.route('/track', methods=['GET'])
 def track():
     video_url = request.args.get('video_url')
-    if not video_url:
-        return "❌ Missing 'video_url' parameter", 400
-    
+    redirect_url = request.args.get('redirect')  # Capture redirect URL
+
+    if not video_url or not redirect_url:
+        return "❌ Missing 'video_url' or 'redirect' parameter", 400
+
     client_ip = request.remote_addr
     user_agent = request.headers.get('User-Agent')
 
@@ -39,9 +41,8 @@ def track():
     # Log for Render console visibility
     print(f"✅ View logged: {video_url} | IP: {client_ip} | User Agent: {user_agent}")
 
-    # Transparent Pixel Response for tracking
-    pixel = b'\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x80\xff\x00\xc0\xc0\xc0\x00\x00\x00!\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02L\x01\x00;'
-    return pixel, 200, {'Content-Type': 'image/gif'}
+    # Redirect the user back to the video link
+    return redirect(redirect_url, code=302)
 
 # Route to download sorted logs or full log file
 @app.route('/logs', methods=['GET'])
